@@ -20,6 +20,18 @@ type C    = [L]
 type CSet = [C]
 type Clash = (C,L,C,L)
 
+--Constants for testing
+p :: F
+p = Neg (Atom "test")
+
+p1 :: F
+p1 = Disy (Neg (Atom "test")) (Atom "no test")
+
+clausula1 = Disy (Atom "a") (Atom "a")
+clausula3 = Atom "a"
+clausula2 = Disy (Neg (Atom "c")) (Disy (Neg (Atom "d")) (Atom "f"))
+clausula4 = Conj (Conj clausula1 clausula1) (clausula2)
+
 -----------------------------------------
 -- Funciones principales
 -----------------------------------------
@@ -45,7 +57,46 @@ f2CSet = undefined
 -- Pre: recibe una formula en FNC
 -- Pos: convierte la FNC a un conjunto de clausulas
 cnf2CSet :: F -> CSet
-cnf2CSet = undefined
+cnf2CSet (Atom c1) = [[LP c1]]
+cnf2CSet (Neg (Atom c1)) = [[LN c1]]  
+cnf2CSet (Conj c1 c2) = cnf2CSet c1 ++ cnf2CSet c2
+cnf2CSet (Disy c1 c2) = case c1 of {
+  Atom r -> [ insert (auxFNC c2) (LP r) ];
+  Neg k ->  [ insert (auxFNC c2) (LN (extractAtomNeg k))];
+  _ -> undefined
+}
+cnf2CSet _ = undefined
+
+--Gets the list of V's
+auxFNC :: F -> C
+auxFNC (Atom c1) = [LP c1]
+auxFNC (Neg c1) = [LN (extractAtomNeg c1)]
+auxFNC (Disy c1 c2) = case c1 of {
+  Atom r -> [LP r] ++ auxFNC c2;
+  Neg k -> [LN (extractAtomNeg k)] ++ auxFNC c2;
+  _ -> undefined
+}
+auxFNC _ = undefined
+
+contains:: C -> L -> Bool
+contains = \lista e -> case lista of {
+                          [] -> False;
+                          x:xs -> x == e || contains xs e
+                      }
+
+insert:: C -> L -> C
+insert= \lista e -> 
+  if (contains lista e) then 
+    lista
+  else 
+    e:lista
+                    
+
+-- Gets the V from inside a Neg
+extractAtomNeg :: F -> V
+extractAtomNeg (Atom c1) = c1
+extractAtomNeg (Neg c1) = extractAtomNeg c1
+extractAtomNeg _ = undefined
 
 -- Pos: convierte una formula a FNC
 f2cnf :: F -> F
@@ -103,5 +154,5 @@ instance Show F where
   show (a `Imp` b)    = "(" ++ show a ++ ") --> (" ++ show b ++ ")"
   
 instance Show L where  
-  show (LP v)  = "~" ++ v
-  show (LN v)  = v  
+  show (LN v)  = "~" ++ v
+  show (LP v)  = v  
