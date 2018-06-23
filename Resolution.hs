@@ -32,6 +32,16 @@ clausula3 = Atom "a"
 clausula2 = Disy (Neg (Atom "c")) (Disy (Neg (Atom "d")) (Atom "f"))
 clausula4 = Conj (Conj clausula1 clausula1) (clausula2)
 
+conj1 = [(LN "primero"),(LP "segundo"),(LP "tercer")]
+conj2 = [(LN "cuarto"),(LN "quinto"),(LP "tercer"),(LP "segundo")]
+conj3 = [(LP "segundo"),(LN "primero")]
+conj4 = []
+conj5 = [(LN "cuarto"),(LN "quinto"),(LP "tercer"),(LP "segundo")]
+
+cset1 = [conj1,conj2]
+cset2 = [conj5,conj3]
+
+
 -----------------------------------------
 -- Funciones principales
 -----------------------------------------
@@ -56,16 +66,27 @@ f2CSet = undefined
 
 -- Pre: recibe una formula en FNC
 -- Pos: convierte la FNC a un conjunto de clausulas
-cnf2CSet :: F -> CSet
-cnf2CSet (Atom c1) = [[LP c1]]
-cnf2CSet (Neg (Atom c1)) = [[LN c1]]  
-cnf2CSet (Conj c1 c2) = cnf2CSet c1 ++ cnf2CSet c2
-cnf2CSet (Disy c1 c2) = case c1 of {
+cnf2CSetRepe :: F -> CSet
+cnf2CSetRepe (Atom c1) = [[LP c1]]
+cnf2CSetRepe (Neg (Atom c1)) = [[LN c1]]  
+cnf2CSetRepe (Conj c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
+cnf2CSetRepe (Disy c1 c2) = case c1 of {
   Atom r -> [ insert (auxFNC c2) (LP r) ];
   Neg k ->  [ insert (auxFNC c2) (LN (extractAtomNeg k))];
   _ -> undefined
 }
-cnf2CSet _ = undefined
+cnf2CSetRepe _ = undefined
+
+cnf2CSet :: F -> CSet
+cnf2CSet = \f -> sanitizeCSet (cnf2CSetRepe f)
+
+sanitizeCSet :: CSet -> CSet
+sanitizeCSet []   = [];
+sanitizeCSet (c:set) = 
+  if isCInCSet c set then
+    sanitizeCSet set
+  else
+    c:(sanitizeCSet set)
 
 --Gets the list of V's
 auxFNC :: F -> C
@@ -90,6 +111,29 @@ insert= \lista e ->
     lista
   else 
     e:lista
+
+isCContained:: C -> C -> Bool
+isCContained [] _ = True
+isCContained c1 [] = False
+isCContained c1 c2 = case c1 of {
+  x:xs -> case contains c2 x of {
+    True -> isCContained xs c2;
+    False -> False
+  };
+  _ -> undefined
+}
+
+isCEqual:: C -> C -> Bool
+isCEqual = \c1 c2 ->
+  (isCContained c1 c2) && (isCContained c2 c1)
+
+isCInCSet:: C -> CSet -> Bool
+isCInCSet [] _ = True
+isCInCSet _ [] = False
+isCInCSet x (y:ys) = case (isCContained x y) of {
+  True -> True;
+  False -> isCInCSet x ys
+}  
                     
 
 -- Gets the V from inside a Neg
