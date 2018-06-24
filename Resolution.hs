@@ -37,6 +37,7 @@ conj2 = [(LN "cuarto"),(LN "quinto"),(LP "tercer"),(LP "segundo")]
 conj3 = [(LP "segundo"),(LN "primero")]
 conj4 = []
 conj5 = [(LN "cuarto"),(LN "quinto"),(LP "tercer"),(LP "segundo")]
+conj6 = [(LN "cuarto"),(LN "tercer"),(LP "tercer"),(LP "segundo")]
 
 cset1 = [conj1,conj2]
 cset2 = [conj5,conj3]
@@ -48,6 +49,71 @@ cset2 = [conj5,conj3]
 -- Pos: retorna True si la formula es SAT, o False si es UNSAT
 sat :: F -> Bool
 sat = undefined
+--sat = \f -> case (resolveInsideClash (f2CSet f)) of {
+--  [] -> False;
+--  x:xs -> 
+--}
+
+-- Check clashes in a CSet
+hasClashCSet :: CSet -> Bool
+hasClashCSet [] = False
+hasClashCSet (x:xs) = case (hasClashCCset x xs) of {
+  True -> True;
+  False -> hasClashCSet xs
+} 
+
+--Checks ONE C against a CSet for clashes
+hasClashCCset :: C -> CSet -> Bool
+hasClashCCset _ [] = False
+hasClashCCset c cs:xcs = case (hasClashCC c cs) of {
+  True -> True;
+  False -> (hasClashCCset c xcs)
+}
+
+--Check clash ONE C AGASINT ANOTHER C
+hasClashCC :: C -> C -> Bool
+hasClashCC [] _ = False;
+hasClashCC (l:resto) c2 = (hasClashCL c2 l) || hasClashCC resto c2
+
+--Check clash ONE C AGAINST ONE L
+hasClashCL :: C -> L -> Bool
+hasClashCL _ l = False
+hasClashCL (c:cs) l = 
+  let negado = case literal of {
+    LN l -> LP l;
+    LP l -> LN l;
+  } in
+  if (contains cs negado) then
+    True 
+  else
+    (hasClashCL cs)
+
+-- Resolves clashes INSIDE the same C's
+resolveInsideClash :: CSet -> CSet
+resolveInsideClash [] = []
+resolveInsideClash (x:xs) = ((cleanInsideClash x):(resolveInsideClash xs))
+
+--Check if the C is valid and then return the C
+cleanInsideClash :: C -> C
+cleanInsideClash [] = []
+cleanInsideClash c1 = case (checkInsideClash c1) of {
+  True -> c1;
+  False -> []
+}
+
+--Check if the C is not clashed in inside
+checkInsideClash :: C -> Bool
+checkInsideClash [] = True
+checkInsideClash (literal:resto) = 
+  let negado = case literal of {
+    LN l -> LP l;
+    LP l -> LN l;
+  } in
+  if (contains resto negado) then
+    False 
+  else
+    (checkInsideClash resto)
+  
 
 -- Pos: retorna True si la formula es Tautología, o False en caso contrario
 tau :: F -> Bool
@@ -62,7 +128,7 @@ valid = undefined
 -----------------------------------------
 -- Pos: convierte una formula a un conjunto de clausulas
 f2CSet :: F -> CSet
-f2CSet = undefined
+f2CSet c1 = cnf2CSet (f2cnf c1)
 
 -- Pre: recibe una formula en FNC
 -- Pos: convierte la FNC a un conjunto de clausulas
@@ -183,7 +249,21 @@ resolveCSet = undefined
                
 -- Pos: retorna la resolvente de un conflicto
 resolveClash :: Clash -> C
-resolveClash = undefined
+resolveClash (c1,l1,c2,l2) = (mergeC (returnCWithoutL c1 l1) (returnCWithoutL c2 l2))
+
+returnCWithoutL :: C -> L -> C
+returnCWithoutL [] _ = []
+returnCWithoutL (x:xs) l = case x == l of {
+  True -> returnCWithoutL xs l;
+  False -> (x:(returnCWithoutL xs l))
+}
+
+mergeC :: C -> C -> C
+mergeC c [] = c
+mergeC [] c = c
+mergeC (x) (y:ys) = (mergeC (insert x y) ys)
+
+
 
 
 ----------------------------------------------------------------------------------
