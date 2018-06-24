@@ -54,6 +54,20 @@ sat = undefined
 --  x:xs -> 
 --}
 
+returnCSetWithoutClash :: CSet -> CSet
+returnCSetWithoutClash [] = []
+returnCSetWithoutClash (x:xs) = case xs of {
+  [] -> x;
+  r:[] -> case (hasClashCC x r) of {
+    True -> ;
+    False -> x:r
+  };
+  r:rs -> case (hasClashCC x r) of {
+    True -> ;
+    False -> (x:returnCSetWithoutClash(xs))
+  }
+}
+
 -- Check clashes in a CSet
 hasClashCSet :: CSet -> Bool
 hasClashCSet [] = False
