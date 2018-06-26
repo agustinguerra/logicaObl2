@@ -49,24 +49,33 @@ cset2 = [conj5,conj3]
 -- Pos: retorna True si la formula es SAT, o False si es UNSAT
 sat :: F -> Bool
 sat = undefined
---sat = \f -> case (resolveInsideClash (f2CSet f)) of {
---  [] -> False;
---  x:xs -> 
---}
 
-returnCSetWithoutClash :: CSet -> CSet
-returnCSetWithoutClash [] = []
-returnCSetWithoutClash (x:xs) = case xs of {
-  [] -> x;
-  r:[] -> case (hasClashCC x r) of {
-    True -> ;
-    False -> x:r
-  };
-  r:rs -> case (hasClashCC x r) of {
-    True -> ;
-    False -> (x:returnCSetWithoutClash(xs))
+--Check clash ONE C AGASINT ANOTHER C
+findClashCC :: C -> C -> [Clash]
+findClashCC _ [] = []
+findClashCC c1 c2 = 
+  case (getClashingLiterals c1 c2) of {
+    []   -> [];
+    x:[] -> (c1,x,c2,(negateLiteral x));
+    x:xs -> []
   }
-}
+
+  
+
+-- Gets the list of clashing literals given to Clauses
+getClashingLiterals :: C -> C -> [L]
+getClashingLiterals [] _ = []
+getClashingLiterals (l:resto) c2 = 
+  if (hasClash c2 l) then
+    l:(getClashingLiterals resto c2)
+  else
+    (getClashingLiterals resto c2)
+
+negateLiteral :: L -> L
+negateLiteral (LN v) = LP v
+negateLiteral (LP v) = LN v
+
+--test
 
 -- Check clashes in a CSet
 hasClashCSet :: CSet -> Bool
@@ -79,7 +88,7 @@ hasClashCSet (x:xs) = case (hasClashCCset x xs) of {
 --Checks ONE C against a CSet for clashes
 hasClashCCset :: C -> CSet -> Bool
 hasClashCCset _ [] = False
-hasClashCCset c cs:xcs = case (hasClashCC c cs) of {
+hasClashCCset c (cs:xcs) = case (hasClashCC c cs) of {
   True -> True;
   False -> (hasClashCCset c xcs)
 }
@@ -89,18 +98,19 @@ hasClashCC :: C -> C -> Bool
 hasClashCC [] _ = False;
 hasClashCC (l:resto) c2 = (hasClashCL c2 l) || hasClashCC resto c2
 
+
 --Check clash ONE C AGAINST ONE L
 hasClashCL :: C -> L -> Bool
 hasClashCL _ l = False
 hasClashCL (c:cs) l = 
-  let negado = case literal of {
+  let negado = case l of {
     LN l -> LP l;
     LP l -> LN l;
   } in
   if (contains cs negado) then
     True 
   else
-    (hasClashCL cs)
+    (hasClashCL cs l)
 
 -- Resolves clashes INSIDE the same C's
 resolveInsideClash :: CSet -> CSet
