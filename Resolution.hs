@@ -58,7 +58,7 @@ saturarCSet :: CSet -> Int -> CSet
 saturarCSet [] _ = []
 saturarCSet (c:resto) lActual = 
   if (not(length (c:resto) == lActual)) 
-    then (c:resto)++(clash c resto)++(saturarCSet resto (lActual + (length (clash c resto))))
+    then (c):(clash c resto)++(saturarCSet resto ((length (c:resto)) + (length (clash c resto))))
     else (c:resto)
 --Resolves multiple clashes and adds them to the resultant set
 solveClashes :: [Clash] -> CSet
@@ -126,7 +126,11 @@ hasClashCL (c:cs) l =
 -- Resolves clashes INSIDE the same C's
 resolveInsideClash :: CSet -> CSet
 resolveInsideClash [] = []
-resolveInsideClash (x:xs) = ((cleanInsideClash x):(resolveInsideClash xs))
+resolveInsideClash (x:[]) = [x]
+resolveInsideClash (x:xs) = 
+  if checkInsideClash x 
+    then ((cleanInsideClash x):(resolveInsideClash xs))
+    else resolveInsideClash xs
 
 --Check if the C is valid and then return the C
 cleanInsideClash :: C -> C
@@ -179,7 +183,7 @@ cnf2CSetRepe (Disy c1 c2) = case c1 of {
 cnf2CSetRepe _ = undefined
 
 cnf2CSet :: F -> CSet
-cnf2CSet = \f -> sanitizeCSet (cnf2CSetRepe (f2cnf f))
+cnf2CSet = \f -> resolveInsideClash (sanitizeCSet (cnf2CSetRepe (f2cnf f)))
 
 sanitizeCSet :: CSet -> CSet
 sanitizeCSet []   = [];
@@ -231,7 +235,7 @@ isCEqual = \c1 c2 ->
 isCInCSet:: C -> CSet -> Bool
 isCInCSet [] _ = True
 isCInCSet _ [] = False
-isCInCSet x (y:ys) = case (isCContained x y) of {
+isCInCSet x (y:ys) = case (isCEqual x y) of {
   True -> True;
   False -> isCInCSet x ys
 }  
@@ -281,7 +285,7 @@ distr a            = a
 --      si es UNSAT, retorna un conjunto de clausulas incluyendo la clausula vacía
 resolveCSet :: CSet -> CSet
 resolveCSet [] = []
-resolveCSet c = saturarCSet c (length c) 
+resolveCSet c = saturarCSet c 0 --(length c) 
                
 -- Pos: retorna la resolvente de un conflicto
 resolveClash :: Clash -> C
@@ -320,3 +324,4 @@ instance Show L where
 
 false = (Atom "p") `Conj` (Neg (Atom "p"))
 true  = false `Imp` false
+con2 = true `Imp` false
