@@ -50,23 +50,36 @@ cset2 = [conj5,conj3]
 sat :: F -> Bool
 sat = undefined
 
---Check clash ONE C AGASINT ANOTHER C
+saturarCSet :: CSet -> Int -> CSet
+saturarCSet [] _ = []
+saturarCSet (c:resto) lActual = 
+  if (not(length (c:resto) == lActual)) 
+    then (c:resto)++(clash c resto)++(saturarCSet resto (lActual + (length (clash c resto))))
+    else (c:resto)
+--Resolves multiple clashes and adds them to the resultant set
+solveClashes :: [Clash] -> CSet
+solveClashes []   = []
+solveClashes (c:cs) = (resolveClash c):(solveClashes cs)
+-- C contra todo el CSet da un CSet nuevo  
+clash :: C -> CSet -> CSet
+clash c [] = []
+clash c (x:xs) = (solveClashes (findClashCC c x)) ++ (clash c xs)
+
+--Check clash ONE C AGASINT ANOTHER C 
 findClashCC :: C -> C -> [Clash]
 findClashCC _ [] = []
 findClashCC c1 c2 = 
   case (getClashingLiterals c1 c2) of {
     []   -> [];
-    x:[] -> (c1,x,c2,(negateLiteral x));
+    x:[] -> [(c1,x,c2,(negateLiteral x))];
     x:xs -> []
-  }
-
-  
+  }  
 
 -- Gets the list of clashing literals given to Clauses
 getClashingLiterals :: C -> C -> [L]
 getClashingLiterals [] _ = []
 getClashingLiterals (l:resto) c2 = 
-  if (hasClash c2 l) then
+  if (hasClashCL c2 l) then
     l:(getClashingLiterals resto c2)
   else
     (getClashingLiterals resto c2)
@@ -74,8 +87,6 @@ getClashingLiterals (l:resto) c2 =
 negateLiteral :: L -> L
 negateLiteral (LN v) = LP v
 negateLiteral (LP v) = LN v
-
---test
 
 -- Check clashes in a CSet
 hasClashCSet :: CSet -> Bool
