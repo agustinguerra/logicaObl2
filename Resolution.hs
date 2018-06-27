@@ -46,9 +46,13 @@ cset2 = [conj5,conj3]
 -----------------------------------------
 -- Funciones principales
 -----------------------------------------
+-- containsEmpty :: CSet -> Bool
+-- containsEmpty [] = False
+-- containsEmpty (x:xs) = (x == []) || (containsEmpty xs)
+
 -- Pos: retorna True si la formula es SAT, o False si es UNSAT
 sat :: F -> Bool
-sat = undefined
+sat f = not (elem [] (resolveCSet (f2CSet f)))
 
 saturarCSet :: CSet -> Int -> CSet
 saturarCSet [] _ = []
@@ -112,13 +116,9 @@ hasClashCC (l:resto) c2 = (hasClashCL c2 l) || hasClashCC resto c2
 
 --Check clash ONE C AGAINST ONE L
 hasClashCL :: C -> L -> Bool
-hasClashCL _ l = False
+hasClashCL [] l = False
 hasClashCL (c:cs) l = 
-  let negado = case l of {
-    LN l -> LP l;
-    LP l -> LN l;
-  } in
-  if (contains cs negado) then
+  if (contains (c:cs) (negateLiteral l)) then
     True 
   else
     (hasClashCL cs l)
@@ -174,12 +174,12 @@ cnf2CSetRepe (Conj c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
 cnf2CSetRepe (Disy c1 c2) = case c1 of {
   Atom r -> [ insert (auxFNC c2) (LP r) ];
   Neg k ->  [ insert (auxFNC c2) (LN (extractAtomNeg k))];
-  _ -> undefined
+  _ -> []
 }
 cnf2CSetRepe _ = undefined
 
 cnf2CSet :: F -> CSet
-cnf2CSet = \f -> sanitizeCSet (cnf2CSetRepe f)
+cnf2CSet = \f -> sanitizeCSet (cnf2CSetRepe (f2cnf f))
 
 sanitizeCSet :: CSet -> CSet
 sanitizeCSet []   = [];
@@ -280,7 +280,8 @@ distr a            = a
 -- Pos: si es SAT,   retorna el conjunto de clausulas saturado
 --      si es UNSAT, retorna un conjunto de clausulas incluyendo la clausula vacía
 resolveCSet :: CSet -> CSet
-resolveCSet = undefined
+resolveCSet [] = []
+resolveCSet c = saturarCSet c (length c) 
                
 -- Pos: retorna la resolvente de un conflicto
 resolveClash :: Clash -> C
@@ -314,4 +315,8 @@ instance Show F where
   
 instance Show L where  
   show (LN v)  = "~" ++ v
-  show (LP v)  = v  
+  show (LP v)  = v
+
+
+false = (Atom "p") `Conj` (Neg (Atom "p"))
+true  = false `Imp` false

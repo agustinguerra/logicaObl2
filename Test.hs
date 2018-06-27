@@ -1,7 +1,7 @@
 
 module Test where
 
-import Solution1
+import Resolution
 --import Solution2
 import Test.HUnit  -- Acerca de HUnit: https://hackage.haskell.org/package/HUnit
 
@@ -62,6 +62,7 @@ valTests = [TestLabel "Razonamiento valido 1" val1_val_should_be_true,
 
 allTests = TestList $ satTests ++ tauTests ++ valTests                    
 
+testSat = TestList $ satTests
 
 -- razonamiento valido    
 val1 = ([], (Atom "q") `Imp` (Atom "q"))
