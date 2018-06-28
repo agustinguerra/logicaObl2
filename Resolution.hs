@@ -156,12 +156,20 @@ checkInsideClash (literal:resto) =
 
 -- Pos: retorna True si la formula es Tautología, o False en caso contrario
 tau :: F -> Bool
-tau = undefined
+tau f = not (sat (Neg f))
 
 -- Pos: retorna True si el razonamiento es válido, o False en caso contrario
 valid :: Statement -> Bool
-valid = undefined
+valid ([], f) = tau f
+valid (hipotesis, f) = tau (Imp (catAnd hipotesis) f)
+--valid (hipotesis, f) = case (tau (catAnd hipotesis)) of {
+--  True -> tau f;
+--  False -> True;
+--}
 
+catAnd :: [F] -> F
+catAnd (f:[]) = f 
+catAnd (x:xs) = Conj x (catAnd xs)
 -----------------------------------------
 -- Formulas y Clausulas
 -----------------------------------------
@@ -174,16 +182,38 @@ f2CSet c1 = cnf2CSet (f2cnf c1)
 cnf2CSetRepe :: F -> CSet
 cnf2CSetRepe (Atom c1) = [[LP c1]]
 cnf2CSetRepe (Neg (Atom c1)) = [[LN c1]]  
-cnf2CSetRepe (Conj c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
-cnf2CSetRepe (Disy c1 c2) = case c1 of {
-  Atom r -> [ insert (auxFNC c2) (LP r) ];
-  Neg k ->  [ insert (auxFNC c2) (LN (extractAtomNeg k))];
-  _ -> []
-}
-cnf2CSetRepe _ = undefined
+cnf2CSetRepe (Disy c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
+cnf2CSetRepe (Conj c1 c2) = case c1 of {
+   Atom r -> [ insert (auxFNC c2) (LP r) ];
+   Neg (Atom k) ->  [insert (auxFNC c2) (LN k)];--(extractAtomNeg k))];
+   _ -> undefined
+ };
+ cnf2CSetRepe _ = undefined
+--cnf2CSetRepe (Disy c1 c2) = cnf2CSetRepe
+
+--   Atom r -> [ insert (auxFNC c2) (LP r) ];
+--   Neg (Atom k) ->  [insert (auxFNC c2) (LN k)];--(extractAtomNeg k))];
+--   _ -> case c2 of {
+--     Atom q -> [ insert (auxFNC c1) (LP q) ];
+--     Neg (Atom n) ->  [insert (auxFNC c1) (LN n)];--(extractAtomNeg k))];
+--     _ -> (cnf2CSetRepe c1)++(cnf2CSetRepe c2)
+--   }
+-- }
+
+
+-- cnf2CSetRepe :: F -> CSet
+-- cnf2CSetRepe (Atom c1) = [[LP c1]]
+-- cnf2CSetRepe (Neg (Atom c1)) = [[LN c1]]  
+-- cnf2CSetRepe (Conj c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
+-- cnf2CSetRepe (Disy c1 c2) = case c1 of {
+--   Atom r -> [ insert (auxFNC c2) (LP r) ];
+--   Neg (Atom k) ->  [insert (auxFNC c2) (LN k)];--(extractAtomNeg k))];
+--   _ -> undefined
+-- }
+-- cnf2CSetRepe _ = undefined
 
 cnf2CSet :: F -> CSet
-cnf2CSet = \f -> resolveInsideClash (sanitizeCSet (cnf2CSetRepe (f2cnf f)))
+cnf2CSet = \f -> resolveInsideClash (sanitizeCSet (cnf2CSetRepe f))
 
 sanitizeCSet :: CSet -> CSet
 sanitizeCSet []   = [];
@@ -325,3 +355,6 @@ instance Show L where
 false = (Atom "p") `Conj` (Neg (Atom "p"))
 true  = false `Imp` false
 con2 = true `Imp` false
+
+val2 = ([((Atom "q") `Conj` (Atom "r")) `Imp` (Atom "p"), (Neg (Atom "q")) `Disy` (Atom "r"), Atom "q"],  (Atom "p") `Conj` (Atom "q"))
+val3 = ([(Neg (Atom "p")) `Disy` (Neg (Atom "q")) `Disy` (Atom "r"), Atom "p", Atom "q"],  Atom "r")

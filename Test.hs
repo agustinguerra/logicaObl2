@@ -63,6 +63,7 @@ valTests = [TestLabel "Razonamiento valido 1" val1_val_should_be_true,
 allTests = TestList $ satTests ++ tauTests ++ valTests                    
 
 testSat = TestList $ satTests
+testTau = TestList $ tauTests
 
 -- razonamiento valido    
 val1 = ([], (Atom "q") `Imp` (Atom "q"))
