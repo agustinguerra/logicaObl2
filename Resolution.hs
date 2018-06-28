@@ -182,13 +182,16 @@ f2CSet c1 = cnf2CSet (f2cnf c1)
 cnf2CSetRepe :: F -> CSet
 cnf2CSetRepe (Atom c1) = [[LP c1]]
 cnf2CSetRepe (Neg (Atom c1)) = [[LN c1]]  
-cnf2CSetRepe (Disy c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
-cnf2CSetRepe (Conj c1 c2) = case c1 of {
+cnf2CSetRepe (Conj c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
+cnf2CSetRepe (Disy c1 c2) = 
+  -- Necesito tener atomos a la izq y derecha
+  case c1 of {
    Atom r -> [ insert (auxFNC c2) (LP r) ];
    Neg (Atom k) ->  [insert (auxFNC c2) (LN k)];--(extractAtomNeg k))];
-   _ -> undefined
+   _ -> (cnf2CSetRepe c1) ++ (cnf2CSetRepe c2)
  };
- cnf2CSetRepe _ = undefined
+
+cnf2CSetRepe _ = undefined
 --cnf2CSetRepe (Disy c1 c2) = cnf2CSetRepe
 
 --   Atom r -> [ insert (auxFNC c2) (LP r) ];
@@ -199,6 +202,7 @@ cnf2CSetRepe (Conj c1 c2) = case c1 of {
 --     _ -> (cnf2CSetRepe c1)++(cnf2CSetRepe c2)
 --   }
 -- }
+
 
 
 -- cnf2CSetRepe :: F -> CSet
@@ -230,6 +234,7 @@ auxFNC (Neg c1) = [LN (extractAtomNeg c1)]
 auxFNC (Disy c1 c2) = case c1 of {
   Atom r -> [LP r] ++ auxFNC c2;
   Neg k -> [LN (extractAtomNeg k)] ++ auxFNC c2;
+  Disy p k -> auxFNC p ++ auxFNC k;
   _ -> undefined
 }
 auxFNC _ = undefined
