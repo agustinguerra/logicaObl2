@@ -55,13 +55,30 @@ cset2 = [conj5,conj3]
 sat :: F -> Bool
 sat f = not (elem [] (resolveCSet (f2CSet f)))
 
+-- saturarMuchasVeces :: CSet -> CSet
+-- saturarMuchasVeces  cset = 
+--   if not (length cset == lActual) then
+--     saturarCSet cset 0 
+--   where lActual = length (saturarCSet cset 0)
+
+-- saturarCSet :: CSet -> Int -> CSet
+-- saturarCSet [] _ = []
+-- saturarCSet (c:resto) lActual =
+--   if (not (length (c:resto) == lActual))
+--   then (c):(clash c resto)++(saturarCSet resto ((length (c:resto)) + (length (clash c resto))))
+--   else 
+--     saturarCSet resto (length (c:resto))
+
+
 saturarCSet :: CSet -> Int -> CSet
 saturarCSet [] _ = []
 saturarCSet (c:resto) lActual =
-  if (not (length (c:resto) == lActual))
-  then (c):(clash c resto)++(saturarCSet resto ((length (c:resto)) + (length (clash c resto))))
+  if (not ((length (c:resto)+(length (clash c resto))) == lActual))
+  then (saturarCSet (((clash c resto))++(c:resto)) ((length (c:resto)) + (length (clash c resto))))
   else 
-    saturarCSet resto (length (c:resto))
+    (c:resto)
+
+
 
     --Resolves multiple clashes and adds them to the resultant set
 solveClashes :: [Clash] -> CSet
@@ -134,7 +151,7 @@ resolveInsideClash (x:[]) = [x]
 resolveInsideClash (x:xs) = 
   if checkInsideClash x 
     then ((cleanInsideClash x):(resolveInsideClash xs))
-    else resolveInsideClash xs
+    else x:(resolveInsideClash xs)
 
 --Check if the C is valid and then return the C
 cleanInsideClash :: C -> C
@@ -340,3 +357,4 @@ con2 = true `Imp` false
 val2 = ([((Atom "q") `Conj` (Atom "r")) `Imp` (Atom "p"), (Neg (Atom "q")) `Disy` (Atom "r"), Atom "q"],  (Atom "p") `Conj` (Atom "q"))
 v2 = Imp (catAnd [((Atom "q") `Conj` (Atom "r")) `Imp` (Atom "p"), (Neg (Atom "q")) `Disy` (Atom "r"), Atom "q"]) ((Atom "p") `Conj` (Atom "q"))
 val3 = ([(Neg (Atom "p")) `Disy` (Neg (Atom "q")) `Disy` (Atom "r"), Atom "p", Atom "q"],  Atom "r")
+v3 = Imp (catAnd [(Neg (Atom "p")) `Disy` (Neg (Atom "q")) `Disy` (Atom "r"), Atom "p", Atom "q"]) (Atom "r")
