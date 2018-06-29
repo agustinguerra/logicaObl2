@@ -1,4 +1,5 @@
-
+-- Luis Ignacio Loureiro 191659
+-- Agustin Guerra 196344
 module Resolution(sat, tau, valid, V, F(..), Statement, L(..), C, CSet, Clash) where
 
 -----------------------------------------
@@ -56,11 +57,13 @@ sat f = not (elem [] (resolveCSet (f2CSet f)))
 
 saturarCSet :: CSet -> Int -> CSet
 saturarCSet [] _ = []
-saturarCSet (c:resto) lActual = 
-  if (not(length (c:resto) == lActual)) 
-    then (c):(clash c resto)++(saturarCSet resto ((length (c:resto)) + (length (clash c resto))))
-    else (c:resto)
---Resolves multiple clashes and adds them to the resultant set
+saturarCSet (c:resto) lActual =
+  if (not (length (c:resto) == lActual))
+  then (c):(clash c resto)++(saturarCSet resto ((length (c:resto)) + (length (clash c resto))))
+  else 
+    saturarCSet resto (length (c:resto))
+
+    --Resolves multiple clashes and adds them to the resultant set
 solveClashes :: [Clash] -> CSet
 solveClashes []   = []
 solveClashes (c:cs) = (resolveClash c):(solveClashes cs)
@@ -84,7 +87,7 @@ getClashingLiterals :: C -> C -> [L]
 getClashingLiterals [] _ = []
 getClashingLiterals (l:resto) c2 = 
   if (hasClashCL c2 l) then
-    l:(getClashingLiterals resto c2)
+   insert (getClashingLiterals resto c2) l
   else
     (getClashingLiterals resto c2)
 
@@ -118,7 +121,8 @@ hasClashCC (l:resto) c2 = (hasClashCL c2 l) || hasClashCC resto c2
 hasClashCL :: C -> L -> Bool
 hasClashCL [] l = False
 hasClashCL (c:cs) l = 
-  if (contains (c:cs) (negateLiteral l)) then
+ -- if (contains (c:cs) (negateLiteral l)) then
+  if (c == (negateLiteral l)) then
     True 
   else
     (hasClashCL cs l)
@@ -146,7 +150,7 @@ checkInsideClash [] = True
 checkInsideClash (literal:resto) = 
   let negado = case literal of {
     LN l -> LP l;
-    LP l -> LN l;
+    LP j -> LN j;
   } in
   if (contains resto negado) then
     False 
@@ -162,10 +166,6 @@ tau f = not (sat (Neg f))
 valid :: Statement -> Bool
 valid ([], f) = tau f
 valid (hipotesis, f) = tau (Imp (catAnd hipotesis) f)
---valid (hipotesis, f) = case (tau (catAnd hipotesis)) of {
---  True -> tau f;
---  False -> True;
---}
 
 catAnd :: [F] -> F
 catAnd (f:[]) = f 
@@ -183,39 +183,15 @@ cnf2CSetRepe :: F -> CSet
 cnf2CSetRepe (Atom c1) = [[LP c1]]
 cnf2CSetRepe (Neg (Atom c1)) = [[LN c1]]  
 cnf2CSetRepe (Conj c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
-cnf2CSetRepe (Disy c1 c2) = 
-  -- Necesito tener atomos a la izq y derecha
-  case c1 of {
-   Atom r -> [ insert (auxFNC c2) (LP r) ];
-   Neg (Atom k) ->  [insert (auxFNC c2) (LN k)];--(extractAtomNeg k))];
-   _ -> (cnf2CSetRepe c1) ++ (cnf2CSetRepe c2)
- };
-
+cnf2CSetRepe (Disy c1 c2) =  [(listDisy c1) ++ (listDisy c2)]
 cnf2CSetRepe _ = undefined
---cnf2CSetRepe (Disy c1 c2) = cnf2CSetRepe
 
---   Atom r -> [ insert (auxFNC c2) (LP r) ];
---   Neg (Atom k) ->  [insert (auxFNC c2) (LN k)];--(extractAtomNeg k))];
---   _ -> case c2 of {
---     Atom q -> [ insert (auxFNC c1) (LP q) ];
---     Neg (Atom n) ->  [insert (auxFNC c1) (LN n)];--(extractAtomNeg k))];
---     _ -> (cnf2CSetRepe c1)++(cnf2CSetRepe c2)
---   }
--- }
-
-
-
--- cnf2CSetRepe :: F -> CSet
--- cnf2CSetRepe (Atom c1) = [[LP c1]]
--- cnf2CSetRepe (Neg (Atom c1)) = [[LN c1]]  
--- cnf2CSetRepe (Conj c1 c2) = cnf2CSetRepe c1 ++ cnf2CSetRepe c2
--- cnf2CSetRepe (Disy c1 c2) = case c1 of {
---   Atom r -> [ insert (auxFNC c2) (LP r) ];
---   Neg (Atom k) ->  [insert (auxFNC c2) (LN k)];--(extractAtomNeg k))];
---   _ -> undefined
--- }
--- cnf2CSetRepe _ = undefined
-
+listDisy :: F -> C
+listDisy (Atom c1) = [LP c1]
+listDisy (Neg (Atom c1)) = [LN c1]
+listDisy (Disy c1 c2) = (listDisy c1)++(listDisy c2)
+listDisy _ = undefined
+ 
 cnf2CSet :: F -> CSet
 cnf2CSet = \f -> resolveInsideClash (sanitizeCSet (cnf2CSetRepe f))
 
@@ -320,7 +296,7 @@ distr a            = a
 --      si es UNSAT, retorna un conjunto de clausulas incluyendo la clausula vacía
 resolveCSet :: CSet -> CSet
 resolveCSet [] = []
-resolveCSet c = saturarCSet c 0 --(length c) 
+resolveCSet c = saturarCSet c 0 
                
 -- Pos: retorna la resolvente de un conflicto
 resolveClash :: Clash -> C
@@ -362,4 +338,5 @@ true  = false `Imp` false
 con2 = true `Imp` false
 
 val2 = ([((Atom "q") `Conj` (Atom "r")) `Imp` (Atom "p"), (Neg (Atom "q")) `Disy` (Atom "r"), Atom "q"],  (Atom "p") `Conj` (Atom "q"))
+v2 = Imp (catAnd [((Atom "q") `Conj` (Atom "r")) `Imp` (Atom "p"), (Neg (Atom "q")) `Disy` (Atom "r"), Atom "q"]) ((Atom "p") `Conj` (Atom "q"))
 val3 = ([(Neg (Atom "p")) `Disy` (Neg (Atom "q")) `Disy` (Atom "r"), Atom "p", Atom "q"],  Atom "r")
